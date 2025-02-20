@@ -1,0 +1,4 @@
+*.mp4
+checkpoints/
+annotated_frames/
+__pycache__/
