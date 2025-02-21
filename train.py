@@ -30,7 +30,7 @@ def save_global_checkpoint(global_checkpoint, checkpoint_dir):
 def get_dataloaders(annotated_frames_dir, seane_len, stride, input_size, train_transform, val_transform, batch_size, val_split=0.2):
     train_dataset = SceneDataset(
         annotated_frames_dir,
-        seane_len=seane_len,
+        scene_len=seane_len,
         stride=stride,
         input_size=input_size,
         transform=train_transform,
@@ -94,12 +94,6 @@ def train_one_epoch(model, dataloader, criterions, optimizer, phase, num_event_1
     total_batches = 0
     progress_bar = tqdm(dataloader, desc=f"Training Phase {phase}", unit="batch", leave=False)
     
-    # 各イベントの Accuracy を初期化（フェーズに応じて）
-    accuracy_1 = Accuracy(task="multiclass", num_classes=num_event_1).to(device)
-    if phase >= 2:
-        accuracy_2 = Accuracy(task="multiclass", num_classes=num_event_2).to(device)
-    if phase == 3:
-        accuracy_3 = Accuracy(task="multiclass", num_classes=num_event_3).to(device)
     
     for inputs, labels in progress_bar:
         inputs = inputs.to(device)
@@ -108,16 +102,12 @@ def train_one_epoch(model, dataloader, criterions, optimizer, phase, num_event_1
         if phase == 1:
             target = labels['event_1'].to(device)
             loss = criterions['event1'](outputs, target)
-            acc = accuracy_1(outputs, target)
         elif phase == 2:
             target1 = labels['event_1'].to(device)
             target2 = labels['event_2'].to(device)
             loss1 = criterions['event1'](outputs[:, :num_event_1], target1)
             loss2 = criterions['event2'](outputs[:, num_event_1:], target2)
-            acc1 = accuracy_1(outputs[:, :num_event_1], target1)
-            acc2 = accuracy_2(outputs[:, num_event_1:], target2)
             loss = loss1 + loss2
-            acc = (acc1 + acc2) / 2
         elif phase == 3:
             target1 = labels['event_1'].to(device)
             target2 = labels['event_2'].to(device)
@@ -125,20 +115,15 @@ def train_one_epoch(model, dataloader, criterions, optimizer, phase, num_event_1
             loss1 = criterions['event1'](outputs[:, :num_event_1], target1)
             loss2 = criterions['event2'](outputs[:, num_event_1:num_event_1+num_event_2], target2)
             loss3 = criterions['event3'](outputs[:, num_event_1+num_event_2:], target3)
-            acc1 = accuracy_1(outputs[:, :num_event_1], target1)
-            acc2 = accuracy_2(outputs[:, num_event_1:num_event_1+num_event_2], target2)
-            acc3 = accuracy_3(outputs[:, num_event_1+num_event_2:], target3)
             loss = loss1 + loss2 + loss3
-            acc = (acc1 + acc2 + acc3) / 3
 
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
         
         running_loss += loss.item()
-        running_acc += acc.item()
         total_batches += 1
-        progress_bar.set_postfix(loss=running_loss / total_batches, acc=running_acc / total_batches)
+        progress_bar.set_postfix(loss=running_loss / total_batches)
         
     print(f'model output: {outputs}')    
     return running_loss / total_batches if total_batches > 0 else 0.0

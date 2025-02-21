@@ -2,14 +2,15 @@ import cv2
 import os
 import pandas as pd
 from config import Config
+import numpy as np
 
 def get_reverse_mappings(config):
     """ イベントのマッピングを逆引き辞書として取得 """
-    return (
-        {v: k for k, v in config.event1_mapping.items()},
-        {v: k for k, v in config.event2_mapping.items()},
-        {v: k for k, v in config.event3_mapping.items()}
-    )
+    reverse_mapping_event_groups = {}
+    for group, item in config.event_groups.items():
+        reverse_mapping_event_groups[group] = {v: k for k, v in item.items()}
+    
+    return reverse_mapping_event_groups
 
 def load_annotations(csv_path):
     """ アノテーションのCSVを読み込む """
@@ -23,30 +24,30 @@ def load_annotations(csv_path):
         print(f"Error reading CSV file {csv_path}: {e}")
         return None
 
-def process_frame(frame_path, row, reverse_mapping_1, reverse_mapping_2, reverse_mapping_3):
+def process_frame(i, frame, row, reverse_mapping_event_groups):
     """ フレーム画像にアノテーションを描画し表示 """
-    frame = cv2.imread(frame_path)
     if frame is None:
-        print(f'Failed to read {frame_path}')
+        print(f'Failed to read frame_{i}')
         return
     
-    event_1 = reverse_mapping_1.get(row['event_1'].iloc[0], "Unknown")
-    event_2 = reverse_mapping_2.get(row['event_2'].iloc[0], "Unknown")
-    event_3 = reverse_mapping_3.get(row['event_3'].iloc[0], "Unknown")
-    
-    cv2.putText(frame, event_1, (30, 150), cv2.FONT_HERSHEY_PLAIN, 3.0, (0, 0, 0), 3)
-    cv2.putText(frame, event_2, (30, 210), cv2.FONT_HERSHEY_PLAIN, 3.0, (0, 0, 0), 3)
-    cv2.putText(frame, event_3, (30, 270), cv2.FONT_HERSHEY_PLAIN, 3.0, (0, 0, 0), 3)
-    
-    cv2.imshow('Frame', frame)
-    if cv2.waitKey(25) & 0xFF == 27:
-        return True
+    y_offset = 150
+    for group, item in reverse_mapping_event_groups.items():
+        selected_event_val = row[group].iloc(0)
+        print(selected_event_val)
+        selected_event_key = item.get(selected_event_val)
+        print(selected_event_key)
+        cv2.putText(frame, selected_event_key, (30, y_offset), cv2.FONT_HERSHEY_PLAIN,  3.0, (0, 0, 0), 3)
+        y_offset += 60
+
+        cv2.imshow('Frame', frame)
+        if cv2.waitKey(20) & 0xFF == 27:
+            return True
     return False
 
 def check_annotation(config: Config):
     """ アノテーションを検証するメイン処理 """
     video_dirs = [os.path.join(config.annotated_frames_dir, d) for d in os.listdir(config.annotated_frames_dir)]
-    reverse_mapping_1, reverse_mapping_2, reverse_mapping_3 = get_reverse_mappings(config)
+    reverse_mapping_event_groups = get_reverse_mappings(config)
     
     for video_dir in video_dirs:
         video_basename = os.path.basename(video_dir)
@@ -59,15 +60,20 @@ def check_annotation(config: Config):
         scene_dirs = [os.path.join(video_dir, d) for d in os.listdir(video_dir) if d.startswith('scene')]
         for scene_dir in scene_dirs:
             scene_basename = os.path.basename(scene_dir)
+            scene_basename = scene_basename.split('.')[0]
             row = df[df['scene'] == scene_basename]
             if row.empty:
                 print(f"No annotation found for {scene_basename}")
                 continue
             
-            frame_paths = [os.path.join(scene_dir, f) for f in os.listdir(scene_dir)]
-            for frame_path in frame_paths:
-                if process_frame(frame_path, row, reverse_mapping_1, reverse_mapping_2, reverse_mapping_3):
-                    break
+            frames_data = np.load(scene_dir)
+            frames_file = sorted(frames_data.files, key=lambda x: x.split('_')[1])
+            indices = [3 + k * 7 for k in range(10)]
+            
+            for idx in range(70):
+                
+                frame = frames_data[frames_file[idx]]
+                process_frame(idx, frame, row, reverse_mapping_event_groups)
     
     cv2.destroyAllWindows()
     

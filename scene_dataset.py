@@ -26,7 +26,7 @@ class SceneDataset(Dataset):
     と検証用 ('val') のデータセットを別々に出力できます。
     val_ratio で検証用データの割合を、seed で分割の再現性を確保します。
     """
-    def __init__(self, annotated_frames_dir, seane_len=10, stride=5, 
+    def __init__(self, annotated_frames_dir, scene_len=10, stride=5, 
                  input_size=(512, 512), transform=None,
                  split='train', val_ratio=0.2, seed=42):
         """
@@ -40,7 +40,7 @@ class SceneDataset(Dataset):
         :param seed: データ分割時のランダムシード（再現性のため）
         """
         self.annotated_frames_dir = annotated_frames_dir
-        self.seane_len = seane_len
+        self.seane_len = scene_len
         self.stride = stride
         self.input_size = input_size
         self.split = split

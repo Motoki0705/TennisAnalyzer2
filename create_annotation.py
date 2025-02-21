@@ -130,7 +130,7 @@ class TennisAnnotationTool:
         annotation = {
             'scene': scene_folder_name,
             **events_annotation,
-            'marked_frames': sorted(list(self.marked_frames)),
+            'marked_frames': max(sorted(list(self.marked_frames))),
             'start_frame': block[0][0]
         }
         self.annotations.append(annotation)
@@ -274,6 +274,7 @@ class TennisAnnotationTool:
         last_frame_idx = self.current_frame_idx - 1
         resize_dims = None
         paused = False
+        fps = 40
         while True:
             if self.current_frame_idx != last_frame_idx + 1:
                 cap.set(cv2.CAP_PROP_POS_FRAMES, self.current_frame_idx)
@@ -301,31 +302,35 @@ class TennisAnnotationTool:
                             cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 0, 255), 3)
 
             cv2.imshow('Frame', display_frame)
-            key = cv2.waitKey(20) & 0xFF
+            key = cv2.waitKey(int(1e+3 / fps)) & 0xFF
             if key == ord('q'):
                 self.save_annotations_to_csv()
                 break
-            elif key == ord('s'):
-                paused = not paused
-            elif not paused:
-                if key == ord('d'):
-                    self.current_frame_idx += 8
-                elif key == ord('f'):
-                    self.current_frame_idx += 30
-                elif key == ord('g'):
-                    self.current_frame_idx += 100
-                elif key == ord('a'):
-                    self.go_back_one_frame(cap)
-                elif key == ord('m'):
-                    # 現在のフレームのマーカーのON/OFFを切り替え
-                    if self.current_frame_idx in self.marked_frames:
-                        self.marked_frames.remove(self.current_frame_idx)
-                        print(f"フレーム {self.current_frame_idx} のマーカーを解除しました。")
-                    else:
-                        self.marked_frames.add(self.current_frame_idx)
-                        print(f"フレーム {self.current_frame_idx} にマーカーを設定しました。")
+            elif key == ord('d'):
+                self.current_frame_idx += 8
+            elif key == ord('f'):
+                self.current_frame_idx += 30
+            elif key == ord('g'):
+                self.current_frame_idx += 100
+            elif key == ord('a'):
+                self.go_back_one_frame(cap)
+            elif key == ord('m'):
+                # 現在のフレームのマーカーのON/OFFを切り替え
+                if self.current_frame_idx in self.marked_frames:
+                    self.marked_frames.remove(self.current_frame_idx)
+                    print(f"フレーム {self.current_frame_idx} のマーカーを解除しました。")
                 else:
-                    self.current_frame_idx += 1
+                    self.marked_frames.add(self.current_frame_idx)
+                    print(f"フレーム {self.current_frame_idx} にマーカーを設定しました。")
+            elif key == ord('w'):
+                if fps == 40:
+                    fps = 10
+                elif fps == 10:
+                    fps = 40
+            elif key == ord('s'):
+                paused = not paused        
+            elif not paused:
+                self.current_frame_idx += 1
 
         self.save_annotations_to_csv()
         cap.release()
@@ -347,8 +352,8 @@ if __name__ == "__main__":
     # Config に event_groups が定義されている前提。なければ従来の3グループを利用。
     tool = TennisAnnotationTool(
         config=Config,
-        event_button_font_scale=1.3,
-        event_button_padding=30,
-        lookback_frames=50,
+        event_button_font_scale=1.0,
+        event_button_padding=20,
+        lookback_frames=70,
     )
     tool.run()

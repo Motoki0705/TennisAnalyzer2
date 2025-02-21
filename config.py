@@ -2,33 +2,43 @@ class Config:
     #annotation
     video_paths = [r'C:\Users\kamim\Desktop\vscode\tennis_analyzer\TennisAnalyzer_2\2024全国中学校大会 男子団体戦⧸決勝 清明学園 vs 上青木(野田・林田vs 木原・奥田).mp4']
     annotated_frames_dir = r"C:\Users\kamim\Desktop\vscode\tennis_analyzer\TennisAnalyzer_2\annotated_frames"
-    event1_mapping = {
-        "stroke": 0,
-        "volley": 1,
-        "serve": 2,
-        "smash": 3,
+    event_groups={
+        "event1_mapping" : {
+            "stroke": 0,
+            "volley": 1,
+            "serve": 2,
+            "smash": 3,
+            },
+        "event2_mapping" : {
+            "none": 0,
+            "fore": 1,
+            "back": 2,
+            "front": 3,
+            "overhand ": 4,
+            "cut": 5
+        },
+        "event3_mapping" : {
+            "none": 0,
+            "passing": 1,
+            "slow": 2,
+            "spank": 3,
+            "pouch": 4,
+            "high": 5,
+            "low": 6,
+            "slice": 7,
+            "drop": 8,
+            "rob": 9,
+        },
+        "event4_mapping" : {
+            "straight": 0,
+            "cross": 1,
+            "middle": 2,
+        },
+        "event5_mapping" : {
+            "far": 0,
+            "in": 1
         }
-    event2_mapping = {
-        "none": 0,
-        "fore": 1,
-        "back": 2,
-        "front": 3,
-        "overhand ": 4,
-        "cut": 5
-    }
-    event3_mapping = {
-        "none": 0,
-        "passing": 1,
-        "slow": 2,
-        "spank": 3,
-        "pouch": 4,
-        "high": 5,
-        "low": 6,
-        "slice": 7,
-        "drop": 8,
-        "rob": 9,
-    }
-
+            }
     #train
     seane_len = 10
     stride = 5
